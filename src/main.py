@@ -22,11 +22,7 @@ app = FastAPI(title="AutoDataFlow")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000", 
-        "https://auto-data-flow.vercel.app",
-        "https://autodataflow-frontend.vercel.app" 
-    ],
+    allow_origins=["*"],  # For development, allow all. Change to ["http://localhost:3000"] in prod.
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,12 +76,6 @@ def create_job(req: JobRequest):
     from src.tasks import process_url_job
     q.enqueue(process_url_job, job_id, req.dict())
     return {"job_id": job_id}
-
-
-@app.get("/")
-def health_check():
-    """Health check endpoint."""
-    return {"status": "online", "service": "AutoDataFlow Backend"}
 
 
 @app.get('/jobs/{job_id}')

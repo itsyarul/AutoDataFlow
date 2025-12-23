@@ -34,8 +34,7 @@ export default function Dashboard() {
     },
     onError: (error) => {
       console.error(error)
-      // @ts-ignore
-      alert(`Error: ${error.message || "Failed to create job"}`)
+      alert("Failed to create job")
     }
   })
 
