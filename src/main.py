@@ -22,7 +22,11 @@ app = FastAPI(title="AutoDataFlow")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development, allow all. Change to ["http://localhost:3000"] in prod.
+    allow_origins=[
+        "http://localhost:3000", 
+        "https://auto-data-flow.vercel.app",
+        "https://autodataflow-frontend.vercel.app" 
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
