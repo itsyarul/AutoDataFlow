@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - JOBS_DB=/app/jobs.db
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    command: python -u src/worker.py
+    volumes:
+      - ./:/app
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - JOBS_DB=/app/jobs.db
+    env_file:
+      - .env
+    depends_on:
+      - redis
