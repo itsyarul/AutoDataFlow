@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdrm2 \
     xdg-utils \
     git \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # set working dir
 WORKDIR /app
@@ -35,7 +35,7 @@ COPY requirements.txt /app/requirements.txt
 
 # install pip deps
 RUN pip install --upgrade pip setuptools wheel \
- && pip install --no-cache-dir -r /app/requirements.txt
+    && pip install --no-cache-dir -r /app/requirements.txt
 
 # install Playwright browsers
 # NOTE: this downloads browser binaries (chromium) into the image.
@@ -46,6 +46,7 @@ COPY . /app
 
 # create data dir for exports
 RUN mkdir -p /app/data
+RUN chmod +x /app/start.sh
 
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
