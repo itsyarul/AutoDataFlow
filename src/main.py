@@ -82,6 +82,12 @@ def create_job(req: JobRequest):
     return {"job_id": job_id}
 
 
+@app.get("/")
+def health_check():
+    """Health check endpoint."""
+    return {"status": "online", "service": "AutoDataFlow Backend"}
+
+
 @app.get('/jobs/{job_id}')
 def get_job(job_id: str):
     job = jobs_db.get_job(job_id)
