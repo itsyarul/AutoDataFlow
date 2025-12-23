@@ -18,6 +18,7 @@ const STATUS_ICONS = {
     running: PlayCircle,
     completed: CheckCircle2,
     failed: AlertTriangle,
+    cleaning: Sparkles,
 }
 
 const STATUS_COLORS = {
@@ -25,6 +26,7 @@ const STATUS_COLORS = {
     running: "text-blue-500",
     completed: "text-green-500",
     failed: "text-red-500",
+    cleaning: "text-purple-500",
 }
 
 export function JobCard({ job }: { job: Job }) {
