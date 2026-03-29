@@ -1,4 +1,4 @@
-# AutoDataFlow 🚀🕷️
+# AutoDataFlow 
 **AI-Powered Web Scraping, Data Cleaning, and Analysis Platform**
 
 AutoDataFlow is a modern, full-stack application that transforms the tedious process of web scraping into a streamlined, intelligent workflow. It combines robust browser automation (Playwright) with Generative AI (Gemini) to not just extract data, but clean, analyze, and visualize it automatically.
@@ -8,30 +8,30 @@ AutoDataFlow is a modern, full-stack application that transforms the tedious pro
 
 ---
 
-## ✨ Features
+##  Features
 
-### 1. 🕷️ Universal Web Scraping
+### 1.  Universal Web Scraping
 - **Playwright Integration**: Handles dynamic JavaScript-heavy websites (SPAs) with ease.
 - **Smart Table Extraction**: Automatically identifies and extracts `<table>` elements and converts them to structured data.
 - **LLM Fallback**: If standard extraction fails, uses AI to parse unstructured text into tables.
 
-### 2. 🧹 AI-Powered Data Cleaning
+### 2.  AI-Powered Data Cleaning
 - **User-Directed Cleaning**: Simply tell the AI "Remove the dollar signs" or "Convert 'billions' to numbers", and it writes the code for you.
 - **File-Specific Targeting**: Select specific tables within a job to clean without affecting others.
 - **Auto-Fix**: The system attempts to self-correct generated code if it encounters errors (e.g., import issues).
 
-### 3. 📊 AI Data Analyst
+### 3.  AI Data Analyst
 - **Natural Language Q&A**: Ask questions like "Who has the highest net worth?" and get instant answers based on your data.
 - **Interactive Visualizations**: Ask "Make a bar chart of X vs Y" to generate interactive Plotly charts.
 - **Robust Error Handling**: Friendly feedback when AI quotas are exceeded or data is malformed.
 
-### 4. 💾 Flexible Export
+### 4.  Flexible Export
 - **Formats**: CSV, JSON (Zipped), Parquet, SQLite.
 - **Robust Downloads**: Handles large datasets and prevents file locking issues on Windows.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Backend (`/src`)
 - **FastAPI**: High-performance async Python API.
@@ -49,7 +49,7 @@ AutoDataFlow is a modern, full-stack application that transforms the tedious pro
 
 ---
 
-## 🚀 Quick Start (Docker)
+##  Quick Start (Docker)
 
 The easiest way to run the entire stack is with Docker Compose.
 
@@ -78,7 +78,7 @@ The easiest way to run the entire stack is with Docker Compose.
 
 ---
 
-## 🏃 Manual Setup (Local Dev)
+##  Manual Setup (Local Dev)
 
 If you prefer running without Docker:
 
@@ -114,7 +114,7 @@ If you prefer running without Docker:
 
 ---
 
-## 📖 How to Use
+##  How to Use
 
 1.  **Create a Job**: Go to "New Job". Enter a URL (or prompt).
 2.  **Scrape**: Wait for the system to crawl and extract tables.
@@ -129,5 +129,5 @@ If you prefer running without Docker:
 
 ---
 
-## 📄 License
+##  License
 MIT License.
