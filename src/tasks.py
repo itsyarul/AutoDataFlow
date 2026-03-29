@@ -424,56 +424,83 @@ def _extract_with_llm(html: str, prompt: str, api_key: str, model: str) -> pd.Da
 
 def _generate_with_llm(user_prompt: str, api_key: str, model: str) -> pd.DataFrame:
     """
-    Generate data from scratch using an LLM based on a user prompt.
-    Returns a DataFrame.
+    Generate data using LLM, splitting into chunks to prevent repetition and token limits.
     """
-    default_prompt = """
-    Generate a structured dataset based on the following request.
-    Return ONLY the raw JSON list of objects, no markdown formatting, no backticks.
-    If the request is impossible, return [].
-    """
-    final_prompt = f"{default_prompt}\n\nUser Request: {user_prompt}"
-
     import json
+    import time
     
     if not api_key:
         print("Error: LLM_API_KEY is missing. Make sure it is in .env and Docker is restarted.")
         return pd.DataFrame()
 
-    try:
+    def _call(prompt_text):
         if "gemini" in model.lower():
             import google.generativeai as genai
             genai.configure(api_key=api_key)
             m = genai.GenerativeModel(model)
-            response = m.generate_content(final_prompt)
-            content = response.text
+            response = m.generate_content(prompt_text)
+            return response.text
         else:
-            # Assume OpenAI compatible
             import requests
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            data = {
-                "model": model,
-                "messages": [{"role": "user", "content": final_prompt}],
-                "temperature": 0.7 # Higher temp for creativity in generation
-            }
+            data = {"model": model, "messages": [{"role": "user", "content": prompt_text}], "temperature": 0.7}
             resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=60)
             resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"]
+            return resp.json()["choices"][0]["message"]["content"]
 
-        # Clean markdown if present
-        content = content.strip()
-        if content.startswith("```json"):
-            content = content[7:]
-        if content.startswith("```"):
-            content = content[3:]
-        if content.endswith("```"):
-            content = content[:-3]
+    try:
+        # 1. Determine number of rows requested
+        count_prompt = f"How many rows of data is the user asking for in this request? Return ONLY the integer number. If not specified or unclear, return 50. Request: {user_prompt}"
+        count_text = _call(count_prompt)
+        try:
+            num_rows = int("".join(c for c in count_text if c.isdigit()))
+        except Exception:
+            num_rows = 50
+            
+        if num_rows <= 0:
+            num_rows = 50
+
+        # 2. Generate in chunks
+        chunk_size = 50
+        all_data = []
         
-        data = json.loads(content)
-        if isinstance(data, list):
-            return pd.DataFrame(data)
-        elif isinstance(data, dict):
-            return pd.DataFrame([data])
+        print(f"Generating {num_rows} rows in chunks of {chunk_size}...")
+        
+        for i in range(0, num_rows, chunk_size):
+            start_row = i + 1
+            end_row = min(i + chunk_size, num_rows)
+            print(f"Generating rows {start_row} to {end_row}...")
+            
+            chunk_prompt = f"""
+Generate rows {start_row} to {end_row} out of {num_rows} total rows for the following user request.
+Return ONLY the raw JSON list of objects, no markdown formatting, no backticks, no explanation.
+If it is impossible, return [].
+
+User Request: {user_prompt}
+            """
+            
+            content = _call(chunk_prompt).strip()
+            
+            # Clean markdown if present
+            if content.startswith("```json"): content = content[7:]
+            if content.startswith("```"): content = content[3:]
+            if content.endswith("```"): content = content[:-3]
+            content = content.strip()
+            
+            try:
+                chunk_data = json.loads(content)
+                if isinstance(chunk_data, list):
+                    all_data.extend(chunk_data)
+                elif isinstance(chunk_data, dict):
+                    all_data.append(chunk_data)
+            except Exception as e:
+                print(f"Failed to parse chunk {start_row}-{end_row}: {e}\nContent was: {content[:100]}...")
+                
+            # Small delay to prevent rate limits on free tiers
+            time.sleep(1.5)
+
+        if all_data:
+            return pd.DataFrame(all_data)
         return pd.DataFrame()
 
     except Exception as e:
@@ -620,15 +647,17 @@ def _apply_cleaning_code(df: pd.DataFrame, code: str, job_dir: str | None = None
         return df
         
     try:
-        # Pass pd and np in globals so the function can see it
         import numpy as np
+        import builtins
         
-        # We must use a single dictionary for globals and locals to ensure that 
-        # imports found in the script (like 'import re') are visible to functions (like 'clean_data')
-        # defined in the same script.
-        exec_context = {"pd": pd, "np": np} 
+        # Strip dangerous builtins to prevent Arbitrary Code Execution
+        safe_builtins = {k: getattr(builtins, k) for k in dir(builtins)}
+        for k in ["__import__", "eval", "exec", "open", "compile", "globals", "locals"]:
+            safe_builtins.pop(k, None)
+            
+        exec_context = {"pd": pd, "np": np, "__builtins__": safe_builtins} 
         
-        # Execute the code in this context
+        # Execute the code in this restricted context
         exec(code, exec_context, exec_context)
         
         if "clean_data" in exec_context:
