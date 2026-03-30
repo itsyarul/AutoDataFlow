@@ -22,7 +22,7 @@ def _tables_from_html(html: str):
     return extract_tables(html or "")
 
 
-def _tables_from_playwright_extract(extracted: list):
+def _tables_from_playwright_extract(extracted: list): 
     """
     Convert playwright_client extracted dicts to pandas DataFrames.
     Each extracted element: {'headers': [...], 'rows': [[...],[...]]}
@@ -460,7 +460,35 @@ def _generate_with_llm(user_prompt: str, api_key: str, model: str) -> pd.DataFra
         if num_rows <= 0:
             num_rows = 50
 
-        # 2. Generate in chunks
+        # 2. Extract strict schema and example row
+        schema_prompt = f"""
+Based on the following user request, design exactly ONE perfect example row of data. 
+It must contain all the columns the user implies or explicitly asks for.
+Return ONLY a single valid JSON object (a dictionary, not a list) representing this row.
+No markdown, no explanation.
+User Request: {user_prompt}
+        """
+        schema_text = _call(schema_prompt).strip()
+        if schema_text.startswith("```json"): schema_text = schema_text[7:]
+        if schema_text.startswith("```"): schema_text = schema_text[3:]
+        if schema_text.endswith("```"): schema_text = schema_text[:-3]
+        schema_text = schema_text.strip()
+        
+        try:
+            example_row = json.loads(schema_text)
+            if isinstance(example_row, list) and len(example_row) > 0:
+                example_row = example_row[0]
+            elif not isinstance(example_row, dict):
+                example_row = {}
+        except Exception as e:
+            print(f"Failed to infer schema: {e}. Falling back to undefined schema.")
+            example_row = {}
+            
+        schema_keys = list(example_row.keys()) if example_row else []
+        schema_str = json.dumps(example_row) if example_row else "Will be inferred by you."
+        print(f"Inferred Schema Keys: {schema_keys}")
+
+        # 3. Generate in chunks
         chunk_size = 50
         all_data = []
         
@@ -473,7 +501,12 @@ def _generate_with_llm(user_prompt: str, api_key: str, model: str) -> pd.DataFra
             
             chunk_prompt = f"""
 Generate rows {start_row} to {end_row} out of {num_rows} total rows for the following user request.
-Return ONLY the raw JSON list of objects, no markdown formatting, no backticks, no explanation.
+
+CRITICAL INSTRUCTIONS:
+1. You MUST use exactly these JSON keys for every object: {schema_keys}
+2. Here is the strict schema template you must follow for every row: {schema_str}
+3. If there are any sequential ID columns or incremental numbered columns, you MUST start their count exactly at number {start_row} and end at number {end_row}.
+4. Return ONLY the raw JSON list of objects, no markdown formatting, no backticks, no explanation.
 If it is impossible, return [].
 
 User Request: {user_prompt}
